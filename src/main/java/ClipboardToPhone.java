@@ -15,6 +15,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
 public class ClipboardToPhone {
+    static final String APP_NAME = "Razer-Amuz Sound";
     static volatile boolean paused;
     static TrayIcon tray;
     static final ArrayBlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(10);
@@ -57,7 +58,7 @@ public class ClipboardToPhone {
         token = config.getProperty("bot.token", "").trim();
         chat = config.getProperty("chat.id", "").trim();
         if (!token.matches("[0-9]+:[A-Za-z0-9_-]+") || !chat.matches("[0-9]+")) {
-            JOptionPane.showMessageDialog(null, "Set bot.token and chat.id in config.properties first.", "ClipboardToPhone", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Set bot.token and chat.id in config.properties first.", APP_NAME, JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         String apiKey = System.getenv("OPENAI_API_KEY");
@@ -81,7 +82,7 @@ public class ClipboardToPhone {
         }
         lockChannel = FileChannel.open(base.resolve("app.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
         lock = lockChannel.tryLock();
-        if (lock == null) { JOptionPane.showMessageDialog(null, "ClipboardToPhone is already running."); return; }
+        if (lock == null) { JOptionPane.showMessageDialog(null, APP_NAME + " is already running.", APP_NAME, JOptionPane.INFORMATION_MESSAGE); return; }
         service.loadHistory(base.resolve("work").resolve("messages-" + token.substring(0, token.indexOf(':')) + "-" + chat + ".json"));
         service.warning = ClipboardToPhone::notifyUser;
         menu = new TelegramMenu(service, promptSettings, base.resolve("work").resolve("updates-" + token.substring(0, token.indexOf(':')) + "-" + chat + ".txt"));
@@ -94,13 +95,13 @@ public class ClipboardToPhone {
             BufferedImage icon = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = icon.createGraphics();
             g.setColor(new Color(35, 140, 210)); g.fillRoundRect(2, 2, 28, 28, 8, 8);
-            g.setColor(Color.WHITE); g.drawString("CP", 7, 21); g.dispose();
+            g.setColor(Color.WHITE); g.drawString("RS", 7, 21); g.dispose();
             PopupMenu menu = new PopupMenu();
             CheckboxMenuItem pause = new CheckboxMenuItem("Pause");
-            pause.addItemListener(e -> { paused = pause.getState(); tray.setToolTip(paused ? "ClipboardToPhone: paused" : "ClipboardToPhone: active"); });
+            pause.addItemListener(e -> { paused = pause.getState(); tray.setToolTip(APP_NAME + (paused ? ": paused" : ": active")); });
             menu.add(pause);
             MenuItem exit = new MenuItem("Exit"); exit.addActionListener(e -> System.exit(0)); menu.add(exit);
-            tray = new TrayIcon(icon, "ClipboardToPhone: active", menu); tray.setImageAutoSize(true);
+            tray = new TrayIcon(icon, APP_NAME + ": active", menu); tray.setImageAutoSize(true);
             try { SystemTray.getSystemTray().add(tray); } catch (AWTException e) { throw new RuntimeException(e); }
         });
         startScreenshotHotkey();
@@ -174,5 +175,5 @@ public class ClipboardToPhone {
         return buffer.toByteArray();
     }
     static byte[] hash(byte[] bytes) throws Exception { return MessageDigest.getInstance("SHA-256").digest(bytes); }
-    static void notifyUser(String text) { EventQueue.invokeLater(() -> tray.displayMessage("ClipboardToPhone", text, TrayIcon.MessageType.INFO)); }
+    static void notifyUser(String text) { EventQueue.invokeLater(() -> tray.displayMessage(APP_NAME, text, TrayIcon.MessageType.INFO)); }
 }
