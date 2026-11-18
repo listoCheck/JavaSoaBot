@@ -24,6 +24,7 @@ public class ClipboardToPhone {
     static FileLock lock;
     static Path appDir;
     static ScreenshotService service;
+    static TelegramMenu menu;
 
     public static void main(String[] args) throws Exception {
         if (args.length > 0 && args[0].equals("--self-test")) {
@@ -71,6 +72,8 @@ public class ClipboardToPhone {
         String prompt = ScreenshotService.DEFAULT_PROMPT;
         String promptFile = config.getProperty("ai.prompt.file", "").trim();
         if (!promptFile.isEmpty()) prompt = Files.readString(base.resolve(promptFile), StandardCharsets.UTF_8);
+        PromptSettings promptSettings = new PromptSettings(base.resolve(promptFile.isEmpty() ? "prompt.txt" : promptFile), prompt);
+        prompt = promptSettings.current;
         service = new ScreenshotService(token, chat, apiKey, config.getProperty("openai.model", "gpt-4.1-mini").trim(), prompt, aiEnabled);
         if (aiEnabled && provider.equals("codex")) {
             try { service.codex = new CodexAnalyzer(base, config); }
@@ -81,6 +84,7 @@ public class ClipboardToPhone {
         if (lock == null) { JOptionPane.showMessageDialog(null, "ClipboardToPhone is already running."); return; }
         service.loadHistory(base.resolve("work").resolve("messages-" + token.substring(0, token.indexOf(':')) + "-" + chat + ".json"));
         service.warning = ClipboardToPhone::notifyUser;
+        menu = new TelegramMenu(service, promptSettings, base.resolve("work").resolve("updates-" + token.substring(0, token.indexOf(':')) + "-" + chat + ".txt"));
         if (!SystemTray.isSupported()) { JOptionPane.showMessageDialog(null, "Windows system tray is unavailable."); return; }
         run();
     }
@@ -100,6 +104,7 @@ public class ClipboardToPhone {
             try { SystemTray.getSystemTray().add(tray); } catch (AWTException e) { throw new RuntimeException(e); }
         });
         startScreenshotHotkey();
+        menu.start();
         Thread sender = new Thread(() -> {
             while (true) {
                 try {

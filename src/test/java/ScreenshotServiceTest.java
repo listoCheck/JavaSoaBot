@@ -23,6 +23,7 @@ class ScreenshotServiceTest {
     List<JsonNode> deletions;
     volatile boolean deletionFails;
     volatile long undeletable;
+    final Map<String, JsonNode> requests = new java.util.concurrent.ConcurrentHashMap<>();
     java.util.concurrent.atomic.AtomicLong nextId;
     @BeforeEach void setup() throws Exception {
         calls = new CopyOnWriteArrayList<>(); replies = new CopyOnWriteArrayList<>();
@@ -35,6 +36,7 @@ class ScreenshotServiceTest {
         server.createContext("/", exchange -> {
             String path = exchange.getRequestURI().getPath(); calls.add(path);
             byte[] request = exchange.getRequestBody().readAllBytes();
+            if (!path.equals("/sendDocument")) requests.put(path, ScreenshotService.JSON.readTree(request));
             String response; int status = 200;
             if (path.equals("/sendDocument")) {
                 assertTrue(new String(request, StandardCharsets.UTF_8).contains("image/png"));
@@ -42,6 +44,10 @@ class ScreenshotServiceTest {
             } else if (path.equals("/responses")) {
                 assertEquals("Bearer test-key", exchange.getRequestHeaders().getFirst("Authorization"));
                 aiRequest = ScreenshotService.JSON.readTree(request); response = aiReply; status = aiStatus;
+            } else if (path.equals("/getUpdates")) {
+                response = "{\"ok\":true,\"result\":[{\"update_id\":900}]}";
+            } else if (path.equals("/setMyCommands")) {
+                response = "{\"ok\":true,\"result\":true}";
             } else if (path.equals("/deleteMessages")) {
                 JsonNode deletion = ScreenshotService.JSON.readTree(request); deletions.add(deletion);
                 boolean blocked = deletionFails;
@@ -142,5 +148,23 @@ class ScreenshotServiceTest {
         service.clearPreviousMessages();
         assertEquals(List.of(2L), service.sentMessages);
         assertEquals(4, deletions.size());
+    }
+    @Test void menuKeyboardMessagesAreTrackedForNextScreenshotCleanup() throws Exception {
+        ScreenshotService service = service(false); service.menuMessage("Настройки", true);
+        assertEquals("Изменить промпт", requests.get("/sendMessage").at("/reply_markup/keyboard/0/1").asText());
+        service.process(new byte[]{1});
+        assertEquals("[123]", deletions.get(0).path("message_ids").toString());
+    }
+    @Test void menuRegistersCommandsForOwnerChatAndUsesLongPolling() throws Exception {
+        ScreenshotService service = service(false);
+        TelegramMenu menu = new TelegramMenu(service, new PromptSettings(temp.resolve("prompt.txt"), "initial"), temp.resolve("offset.txt"));
+        menu.registerCommands();
+        assertEquals("chat", requests.get("/setMyCommands").at("/scope/type").asText());
+        assertEquals("567", requests.get("/setMyCommands").at("/scope/chat_id").asText());
+        assertEquals(6, requests.get("/setMyCommands").path("commands").size());
+        JsonNode updates = menu.updates(899, 25);
+        assertEquals(900, updates.get(0).path("update_id").asInt());
+        assertEquals(899, requests.get("/getUpdates").path("offset").asInt());
+        assertEquals(25, requests.get("/getUpdates").path("timeout").asInt());
     }
 }

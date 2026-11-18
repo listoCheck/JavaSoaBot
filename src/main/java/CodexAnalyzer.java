@@ -10,10 +10,13 @@ final class CodexAnalyzer {
     final List<String> executable;
     final Path workRoot;
     final String model;
+    String reasoning = "low";
     final Duration timeout;
     CodexAnalyzer(Path appDir, Properties config) throws IOException {
         this(List.of(resolveExecutable(config.getProperty("codex.executable", ""))), appDir.resolve("work"),
-            config.getProperty("codex.model", "").trim(), Duration.ofSeconds(180));
+            config.getProperty("codex.model", "gpt-6.1-sol").isBlank() ? "gpt-6.1-sol" : config.getProperty("codex.model", "gpt-6.1-sol").trim(), Duration.ofSeconds(180));
+        reasoning = config.getProperty("codex.reasoning", "low").trim();
+        if (!List.of("low", "medium", "high", "xhigh", "max").contains(reasoning)) throw new IOException("Invalid codex.reasoning");
     }
     CodexAnalyzer(List<String> executable, Path workRoot, String model, Duration timeout) {
         this.executable = List.copyOf(executable); this.workRoot = workRoot; this.model = model; this.timeout = timeout;
@@ -47,6 +50,7 @@ final class CodexAnalyzer {
         for (String feature : List.of("shell_tool", "unified_exec", "apps", "plugins", "hooks", "multi_agent", "computer_use", "browser_use", "in_app_browser"))
             args.addAll(List.of("--disable", feature));
         if (!model.isEmpty()) args.addAll(List.of("--model", model));
+        args.addAll(List.of("-c", "model_reasoning_effort=\"" + reasoning + "\""));
         args.addAll(List.of("--image", image.toAbsolutePath().toString(), "--output-last-message", output.toAbsolutePath().toString(), "--color", "never", "-"));
         return args;
     }

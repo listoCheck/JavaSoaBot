@@ -36,6 +36,14 @@ class CodexAnalyzerTest {
         assertTrue(args.contains("--ignore-user-config")); assertTrue(args.contains("forced_login_method=\"chatgpt\""));
         assertTrue(args.contains("shell_tool")); assertEquals("-", args.get(args.size()-1));
         assertFalse(args.contains("--dangerously-bypass-approvals-and-sandbox"));
+        assertTrue(args.contains("model_reasoning_effort=\"low\""));
+    }
+    @Test void configuredModelAndEffortArePassedToCodex() throws Exception {
+        Properties config = new Properties(); config.setProperty("codex.executable", Path.of(System.getProperty("java.home"), "bin", "java.exe").toString());
+        CodexAnalyzer analyzer = new CodexAnalyzer(temp, config);
+        List<String> args = analyzer.command(temp.resolve("a.png"), temp.resolve("answer.txt"));
+        assertEquals("gpt-6.1-sol", args.get(args.indexOf("--model") + 1));
+        assertTrue(args.contains("model_reasoning_effort=\"low\""));
     }
     public static class FakeCodex {
         public static void main(String[] args) throws Exception {
