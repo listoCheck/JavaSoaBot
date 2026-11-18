@@ -18,12 +18,12 @@ $armed = $false
 while (-not $owner.HasExited) {
     $left = ([ClipboardScreenshotKeys]::GetAsyncKeyState(0x25) -band 0x8000) -ne 0
     $right = ([ClipboardScreenshotKeys]::GetAsyncKeyState(0x27) -band 0x8000) -ne 0
-    if ($left -or $right) { $armed = $true }
-    # Either key arms a capture; wait for release to avoid affecting the snipping UI.
-    if ($armed -and -not $left -and -not $right) {
+    # Start at key-down, once per press. No synthetic mouse button is held globally.
+    if (($left -or $right) -and -not $armed) {
         [Console]::WriteLine('SNIP')
         [Console]::Out.Flush()
-        $armed = $false
+        $armed = $true
     }
+    if (-not $left -and -not $right) { $armed = $false }
     Start-Sleep -Milliseconds 20
 }

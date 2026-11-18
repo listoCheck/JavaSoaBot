@@ -152,13 +152,10 @@ public class ClipboardToPhone {
             Runtime.getRuntime().addShutdownHook(new Thread(helper::destroy));
             Thread listener = new Thread(() -> {
                 try (var reader = helper.inputReader()) {
-                    Robot robot = new Robot();
                     String line;
                     while ((line = reader.readLine()) != null) {
                         if (!line.equals("SNIP") || paused) continue;
-                        int[] keys = {java.awt.event.KeyEvent.VK_WINDOWS, java.awt.event.KeyEvent.VK_SHIFT, java.awt.event.KeyEvent.VK_S};
-                        try { for (int key : keys) robot.keyPress(key); }
-                        finally { for (int i = keys.length - 1; i >= 0; i--) robot.keyRelease(keys[i]); }
+                        ScreenshotSelector.open(ClipboardToPhone::notifyUser);
                     }
                     notifyUser("Left/Right arrow helper stopped. Restart the application to restore the shortcuts.");
                 } catch (Exception e) { notifyUser("Screenshot shortcut unavailable. Win+Shift+S can still be used."); }
