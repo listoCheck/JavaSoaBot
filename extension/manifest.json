@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Screenshot Answers",
+  "version": "1.0.0",
+  "description": "Shows answers from your local screenshot bot in a visible page panel.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["http://127.0.0.1:17843/*"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_popup": "popup.html", "default_title": "Screenshot Answers"}
+}

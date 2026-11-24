@@ -103,6 +103,14 @@ class ScreenshotServiceTest {
         aiReply = aiReply.replace("completed", "incomplete"); service(true).process(new byte[]{1});
         assertTrue(replies.get(0).path("text").asText().contains("Ответ неполный"));
     }
+    @Test void browserAndTelegramReceiveSameAnswerFromOneModelRequest() throws Exception {
+        ScreenshotService service = service(true); service.browser = new BrowserBridge(temp, 0);
+        try {
+            service.process(new byte[]{1});
+            assertEquals(replies.get(0).path("text").asText(), ScreenshotService.JSON.readTree(service.browser.snapshot()).path("text").asText());
+            assertEquals(1, calls.stream().filter(path -> path.equals("/responses")).count());
+        } finally { service.browser.server.stop(0); }
+    }
     @Test void newScreenshotDeletesPreviousPhotoAndAllAnswerPartsFirst() throws Exception {
         ScreenshotService service = service(true);
         aiReply = ScreenshotService.JSON.writeValueAsString(Map.of("output", List.of(Map.of("type", "message", "content", List.of(Map.of("type", "output_text", "text", "x".repeat(8000)))))));

@@ -87,6 +87,10 @@ public class ClipboardToPhone {
         service.warning = ClipboardToPhone::notifyUser;
         menu = new TelegramMenu(service, promptSettings, base.resolve("work").resolve("updates-" + token.substring(0, token.indexOf(':')) + "-" + chat + ".txt"));
         if (!SystemTray.isSupported()) { JOptionPane.showMessageDialog(null, "Windows system tray is unavailable."); return; }
+        try {
+            service.browser = new BrowserBridge(base.resolve("work"), 17843);
+            service.browser.start();
+        } catch (Exception e) { JOptionPane.showMessageDialog(null, "Browser panel unavailable: port 17843 is busy or access was denied.", APP_NAME, JOptionPane.WARNING_MESSAGE); }
         run();
     }
 
@@ -113,7 +117,10 @@ public class ClipboardToPhone {
                     while (paused) Thread.sleep(300);
                     service.process(bytes);
                 } catch (InterruptedException e) { return; }
-                catch (Exception e) { notifyUser("Screenshot or answer delivery failed. Check Internet and Telegram settings. Copy text, then the image again to retry."); }
+                catch (Exception e) {
+                    if (service.browser != null) service.browser.publish("Ошибка доставки", "Проверьте Telegram и интернет. Повторите скриншот.");
+                    notifyUser("Screenshot or answer delivery failed. Check Internet and Telegram settings. Copy text, then the image again to retry.");
+                }
             }
         }, "telegram-sender");
         sender.setDaemon(true); sender.start();

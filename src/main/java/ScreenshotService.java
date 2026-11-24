@@ -23,6 +23,7 @@ class ScreenshotService {
     final URI aiEndpoint;
     final boolean aiEnabled;
     CodexAnalyzer codex;
+    BrowserBridge browser;
     final List<Long> sentMessages = new ArrayList<>();
     Path historyFile;
     java.util.function.Consumer<String> warning = text -> {};
@@ -88,18 +89,21 @@ class ScreenshotService {
         this.chat = chat; this.apiKey = apiKey; this.model = model; this.prompt = prompt; this.aiEnabled = enabled;
     }
     void process(byte[] png) throws Exception {
+        if (browser != null) browser.publish("Обработка скриншота…", "");
         clearPreviousMessages();
         long messageId = sendImage(png);
-        if (!aiEnabled) return;
+        if (!aiEnabled) { if (browser != null) browser.publish("Нейросеть отключена", "Скриншот отправлен в Telegram."); return; }
         String answer;
         try { answer = analyze(png); }
         catch (Exception e) {
+            if (browser != null) browser.publish("Ошибка", "Не удалось получить ответ. Проверьте вход Codex и интернет.");
             // Never forward raw provider responses: they may contain sensitive request details.
             reply(codex != null
                 ? "Скриншот получен, но Codex не смог ответить. Проверьте вход через ChatGPT (Login-Codex.cmd), лимиты и интернет. Время ожидания — до 3 минут. Автоматического повтора нет."
                 : "Скриншот получен, но нейросеть не смогла ответить. Проверьте API-ключ, доступ к модели, лимиты и интернет. Автоматического повтора нет.", messageId);
             return;
         }
+        if (browser != null) browser.publish("Ответ", answer);
         for (String part : split(answer, 3500)) reply(part, messageId);
     }
     long sendImage(byte[] png) throws Exception {
