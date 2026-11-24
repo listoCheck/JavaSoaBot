@@ -17,7 +17,10 @@
   const close = document.createElement('button'); close.textContent = '×'; close.title = 'Закрыть панель';
   let stopped = false, timer, saveTimer, observer;
   function cleanup() { stopped = true; clearTimeout(timer); clearTimeout(saveTimer); observer?.disconnect(); window.removeEventListener('resize', onViewport); }
-  close.onclick = () => { cleanup(); host.remove(); }; header.append(title, close);
+  const toggleSettings = document.createElement('button');
+  toggleSettings.textContent = '⚙'; toggleSettings.title = 'Показать / скрыть настройки';
+  toggleSettings.setAttribute('aria-label', 'Показать / скрыть настройки');
+  close.onclick = () => { cleanup(); host.remove(); }; header.append(title, toggleSettings, close);
   const controls = document.createElement('div'); controls.className = 'controls';
   function slider(caption, min, max, step) {
     const label = document.createElement('label'); label.append(caption);
@@ -31,7 +34,7 @@
   const content = document.createElement('pre');
   const status = document.createElement('small');
   box.append(header, controls, content, status); root.append(style, box); document.documentElement.append(host);
-  const defaults = () => ({x: Math.max(0, innerWidth - 352), y: 12, width: 340, height: Math.min(360, innerHeight), scale: 100, opacity: 100});
+  const defaults = () => ({x: Math.max(0, innerWidth - 352), y: 12, width: 340, height: Math.min(360, innerHeight), scale: 100, opacity: 100, settingsVisible: 1});
   let settings = defaults(), ready = false;
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   function apply() {
@@ -46,6 +49,9 @@
     box.style.fontSize = (12 * settings.scale / 100) + 'px'; box.style.opacity = settings.opacity / 100;
     scale.input.value = settings.scale; scale.value.textContent = settings.scale + '%';
     opacity.input.value = settings.opacity; opacity.value.textContent = settings.opacity + '%';
+    controls.style.display = settings.settingsVisible ? 'flex' : 'none';
+    toggleSettings.setAttribute('aria-expanded', String(Boolean(settings.settingsVisible)));
+    toggleSettings.title = settings.settingsVisible ? 'Скрыть настройки' : 'Показать настройки';
   }
   function save() {
     clearTimeout(saveTimer);
@@ -54,6 +60,7 @@
   scale.input.oninput = () => { settings.scale = Number(scale.input.value); apply(); save(); };
   opacity.input.oninput = () => { settings.opacity = Number(opacity.input.value); apply(); save(); };
   reset.onclick = () => { settings = defaults(); apply(); save(); };
+  toggleSettings.onclick = () => { settings.settingsVisible = settings.settingsVisible ? 0 : 1; apply(); save(); };
   header.addEventListener('pointerdown', event => {
     if (event.button !== 0 || event.target.closest('button')) return;
     event.preventDefault(); header.setPointerCapture(event.pointerId);
