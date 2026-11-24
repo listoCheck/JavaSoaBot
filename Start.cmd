@@ -6,4 +6,4 @@ if not exist "target\clipboard-bot.jar" (
   pause
   exit /b 1
 )
-start "Razer-Amuz Sound" javaw "-Dapp.dir=%~dp0." -jar "%~dp0target\clipboard-bot.jar"
+start "Amuz Razer sound" javaw "-Dapp.dir=%~dp0." -jar "%~dp0target\clipboard-bot.jar"

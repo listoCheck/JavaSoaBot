@@ -1,4 +1,4 @@
-# Razer-Amuz Sound — скриншоты, Codex и Telegram
+# Amuz Razer sound — скриншоты, Codex и Telegram
 
 Windows → стрелка влево ИЛИ стрелка вправо → выделение области → скриншот в Telegram → ответ Codex в том же чате.
 

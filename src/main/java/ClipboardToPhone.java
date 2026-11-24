@@ -15,7 +15,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
 public class ClipboardToPhone {
-    static final String APP_NAME = "Razer-Amuz Sound";
+    static final String APP_NAME = "Amuz Razer sound";
     static volatile boolean paused;
     static TrayIcon tray;
     static final ArrayBlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(10);
